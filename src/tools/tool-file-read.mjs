@@ -56,6 +56,9 @@ const messages = [
 
 可用工具：
 - read_file: 读取文件内容（使用此工具来获取文件内容）
+
+注意事项：
+1. 每个工具如果调用成功，就不再重复调用，最多调用2次（失败的话，就坦荡承认）
 `),
   new HumanMessage('请读取 ./src/tools/tool-file-read.mjs 文件内容并解释代码')
 ];
@@ -80,7 +83,7 @@ while (response.tool_calls && response.tool_calls.length > 0) {
       
       console.log(`  [执行工具] ${toolCall.name}(${JSON.stringify(toolCall.args)})`);
       try {
-        const result = await tool.invoke(toolCall.args);
+        const result = await tool.invoke(toolCall.args); // readFileTool： return `文件内容:\n${content}`;
         return result;
       } catch (error) {
         return `错误: ${error.message}`;
@@ -88,7 +91,7 @@ while (response.tool_calls && response.tool_calls.length > 0) {
     })
   );
   
-  // 将工具结果添加到消息历史
+  // 将**工具结果**添加到消息历史
   response.tool_calls.forEach((toolCall, index) => {
     messages.push(
       new ToolMessage({
@@ -99,6 +102,7 @@ while (response.tool_calls && response.tool_calls.length > 0) {
   });
   
   // 再次调用模型，传入工具结果
+  // 理想情况下，模型在阅读了 messages 中的全部上下文（包括系统指令、用户问题、工具调用记录和工具返回的具体文件内容）后，认为已经拥有足够的信息来回答用户。
   response = await modelWithTools.invoke(messages);
 }
 
