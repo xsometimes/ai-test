@@ -27,8 +27,6 @@ const modelWithTools = model.bindTools(tools);
 /**
  * Agent 执行函数 返回的对话了，
  * 因为可能会反复对话、返回调用 tools 很多次，这里加了个最大限制maxIterations
- * 
- * 
  */
 async function runAgentWithTools(query, maxIterations = 30) {
   const messages = [
@@ -51,6 +49,11 @@ async function runAgentWithTools(query, maxIterations = 30) {
       这样就对了！workingDirectory 已经切换到 react-todo-app，直接执行命令即可.
       - 当需要用户确认时，使用 confirm_action 工具。不要用自然语言提问等待用户输入，因为终端无法响应。
 
+      执行命令工具说明：
+      - 对于一次性命令（如 install、build），工具会等待完成。
+      - 对于长期命令（如 dev、start），工具会立即返回进程ID。
+      - 如需停止长期进程，请使用 kill_process 工具。
+
       回复要简洁，只说做了什么`),
     new HumanMessage(query),
   ];
@@ -58,16 +61,19 @@ async function runAgentWithTools(query, maxIterations = 30) {
 
   for (let i = 0; i < maxIterations; i++) {
     console.log(chalk.bgGreen(`⏳ 正在等待 AI 思考...`));
+
+    // 1. 调用大模型，拿到 response
     const response = await modelWithTools.invoke(messages);
     messages.push(response);
 
-    // 检查是否有工具调用
+    // 2. 检查是否有工具调用
+    // 2-1 如果没有工具调用，直接返回
     if (!response.tool_calls || response.tool_calls.length === 0) {
       console.log(`\n✨ AI 最终回复:\n${response.content}\n`);
       return response.content;
     }
 
-    // 执行工具调用
+    // 2-2 如果有工具调用，执行所有工具
     for (const toolCall of response.tool_calls) {
       const foundTool = tools.find(t => t.name === toolCall.name);
       if (foundTool) {
@@ -78,6 +84,8 @@ async function runAgentWithTools(query, maxIterations = 30) {
         }));
       }
     }
+
+    // 4. 循环继续，再次调用大模型
   }
 
   return  messages[messages.length - 1].content;
@@ -107,6 +115,16 @@ const case1 = `创建一个功能丰富的 React TodoList 应用：
 
 
 `;
+
+/**
+ * echo -e "n\nn" | pnpm create vite react-todo-app --template react-ts 这个 echo 命令在 windows 可能不支持
+ * 可以去掉前面的 echo，应该不需要用户选择也可以
+ * 其实就是输入两个 no，替用户回车。no 的简写是 n
+ * 这严格来说是 create-vite 的问题， template 都支持传参数了，是不是用 npm、用不用 rolldown 还得手动选
+ */
+
+
+
 
 try {
   await runAgentWithTools(case1);
