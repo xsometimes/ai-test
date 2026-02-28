@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import { ChatOpenAI } from '@langchain/openai';
 import { HumanMessage, SystemMessage, ToolMessage } from '@langchain/core/messages';
-import { executeCommandTool, listDirectoryTool, readFileTool, writeFileTool } from '../tools/all-tools.mjs';
+import { executeCommandTool, listDirectoryTool, readFileTool, writeFileTool, confirmActionTool } from '../tools/all-tools.mjs';
 import chalk from 'chalk'; // 用 chalk 加点颜色，不然都是白色不好看
 
 const model = new ChatOpenAI({
@@ -18,6 +18,7 @@ const tools = [
   writeFileTool,
   executeCommandTool,
   listDirectoryTool,
+  confirmActionTool,
 ];
 
 // 绑定工具到模型
@@ -47,7 +48,8 @@ async function runAgentWithTools(query, maxIterations = 30) {
       - 错误示例: { command: "cd react-todo-app && npm install", workingDirectory: "react-todo-app" }
       这是错误的！因为 workingDirectory 已经在 react-todo-app 目录了，再 cd react-todo-app 会找不到目录
       - 正确示例: { command: "npm install", workingDirectory: "react-todo-app" }
-      这样就对了！workingDirectory 已经切换到 react-todo-app，直接执行命令即可
+      这样就对了！workingDirectory 已经切换到 react-todo-app，直接执行命令即可.
+      - 当需要用户确认时，使用 confirm_action 工具。不要用自然语言提问等待用户输入，因为终端无法响应。
 
       回复要简洁，只说做了什么`),
     new HumanMessage(query),
@@ -98,7 +100,8 @@ const case1 = `创建一个功能丰富的 React TodoList 应用：
 4. 添加动画：
  - 添加/删除时的过渡动画
  - 使用 CSS transitions
-5. 列出目录确认
+5. 创建项目完成后，列出目录确认。询问用户是否要进行接下来的操作（如 cd react-todo-app + install + run等），用户回答为Y时，才进行接下来的操作。默认不操作
+
 
 注意：使用 npm，功能要完整，样式要美观，要有动画效果
 
@@ -110,3 +113,8 @@ try {
 } catch (error) {
   console.error(`\n❌ 错误: ${error.message}\n`);
 }
+
+
+/**
+ * 执行命令：node ./src/apps/mini-cursor.mjs
+ */

@@ -3,7 +3,6 @@
 import { spawn } from 'node:child_process';
 
 const command = 'ls -la';
-
 /**
  * const command = 'echo -e "n\nn" | npm create vite react-todo-app --template react-ts'; // for test
  * 命令echo：在终端（命令行）中用来输出（显示）文字的指令，你给它什么内容，它就在屏幕上显示什么内容
@@ -12,10 +11,6 @@ const command = 'ls -la';
  *  echo -e "n\nn" | npm init  或者 echo -e "\n\n\n\n" | some-command
  *  用 echo 模拟用户连续按回车键，实现脚本的自动化应答——每个 \n 就相当于按一次回车。
  */
-
-
-
-
 
 
 const cwd = process.cwd(); // 项目根目录

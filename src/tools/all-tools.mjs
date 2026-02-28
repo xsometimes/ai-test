@@ -6,6 +6,7 @@ import { tool } from'@langchain/core/tools';
 import fs from'node:fs/promises';
 import path from'node:path';
 import { spawn } from'node:child_process';
+import { createInterface } from 'node:readline';
 import { z } from'zod';
 
 
@@ -110,11 +111,18 @@ const executeCommandTool = tool(({
 })
 
 
-/**
+/**N
  * 四、列出目录内容工具
  */
-const listDirectoryTool = tool(async () => {
-
+const listDirectoryTool = tool(async ({ directoryPath }) => {
+  try {
+    const files = await fs.readdir(directoryPath);
+    console.log(`[工具调用] list_directory("${directoryPath}") - 找到 ${files.length} 个项目`);
+    return`目录内容:\n${files.map(f => `- ${f}`).join('\n')}`;
+  } catch (error) {
+    console.log(`[工具调用] list_directory("${directoryPath}") - 错误:${error.message}`);
+    return`列出目录失败: ${error.message}`;
+  }
 }, {
   name: 'list_directory',
   description: '列出指定目录下的所有文件和文件夹',
@@ -123,10 +131,39 @@ const listDirectoryTool = tool(async () => {
   }),
 });
 
+/**
+ * 添加专门的询问工具
+ */
+const confirmActionTool = tool(
+  async ({ prompt }) => {
+    // 使用 readline 实现终端交互
+    const readline = createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+
+    return new Promise((resolve) => {
+      readline.question(`${prompt} (y/N): `, (answer) => {
+        readline.close();
+        const confirmed = answer.toLowerCase() === 'y' || answer.toLowerCase() === 'yes';
+        resolve(confirmed ? '用户确认继续' : '用户取消操作');
+      });
+    });
+  },
+  {
+    name: 'confirm_action',
+    description: '向用户确认是否继续执行操作，返回用户的确认结果',
+    schema: z.object({
+      prompt: z.string().describe('向用户显示的确认信息'),
+    }),
+  }
+);
+
 
 export {
   readFileTool,
   writeFileTool,
   executeCommandTool,
-  listDirectoryTool
+  listDirectoryTool,
+  confirmActionTool
 };
