@@ -18,6 +18,10 @@ const model = new ChatOpenAI({
   },
 });
 
+/**
+ * 读取 mcp 下的每个 tool 的信息，绑定到模型，和之前写 tool 然后 model.bindTools 一样
+ * 大模型会读取每个 tool 的 description 和 schema
+ */
 const mcpClient = new MultiServerMCPClient({
   mcpServers: {
     'my-mcp-server': {
@@ -86,4 +90,5 @@ for (const [serverName, resources] of Object.entries(res)) {
 
 
 
-await mcpClient.close(); // 退出子进程
+await mcpClient.close(); // 退出子进程.  关闭 ide 会关闭这些子进程
+
